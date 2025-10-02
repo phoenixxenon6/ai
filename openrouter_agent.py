@@ -473,6 +473,25 @@ def user_interface():
         z-index: 9999;
         pointer-events: none;
     }
+    
+    /* Quick question buttons styling */
+    .stButton > button {
+        background: linear-gradient(45deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 20px !important;
+        padding: 8px 16px !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3) !important;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4) !important;
+        background: linear-gradient(45deg, #764ba2 0%, #667eea 100%) !important;
+    }
     </style>
     """, unsafe_allow_html=True)
     
@@ -530,6 +549,21 @@ def user_interface():
     # Display chat area
     st.markdown(chat_html, unsafe_allow_html=True)
     
+    # Quick question buttons
+    st.markdown("""
+    <div style="margin-bottom: 15px;">
+        <p style="color: #666; font-size: 14px; margin-bottom: 8px;">💡 Quick Questions:</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    quick_col1, quick_col2, quick_col3 = st.columns(3)
+    with quick_col1:
+        q1_button = st.button("📈 What is Trading?", key="quick1", use_container_width=True)
+    with quick_col2:
+        q2_button = st.button("🎯 Trading Strategies", key="quick2", use_container_width=True)
+    with quick_col3:
+        q3_button = st.button("⚠️ Risk Management", key="quick3", use_container_width=True)
+
     # Input controls (positioned by CSS)
     col1, col2 = st.columns([4, 1])
     with col1:
@@ -559,22 +593,54 @@ def user_interface():
         if (chatArea) {
             chatArea.scrollTop = chatArea.scrollHeight;
         }
+        // Also scroll the main window
+        window.scrollTo(0, document.body.scrollHeight);
     }
     
-    // Scroll to bottom when page loads
-    setTimeout(scrollToBottom, 100);
+    // Continuous scroll during typing animation
+    function autoScrollDuringTyping() {
+        const typingIndicator = document.querySelector('.typing-indicator');
+        if (typingIndicator && typingIndicator.style.display !== 'none') {
+            scrollToBottom();
+            setTimeout(autoScrollDuringTyping, 200); // Keep scrolling every 200ms while typing
+        }
+    }
+    
+    // Enhanced scroll function
+    function enhancedScroll() {
+        scrollToBottom();
+        autoScrollDuringTyping();
+    }
+    
+    // Scroll to bottom when page loads and start monitoring
+    setTimeout(enhancedScroll, 100);
+    
+    // Also scroll on any new content (rerun detection)
+    setInterval(enhancedScroll, 500);
     </script>
     """, unsafe_allow_html=True)
     
-    # Process user input with typing animation - only on button click to avoid loops
-    if ask_button and query.strip():
+    # Handle quick question buttons
+    quick_question = None
+    if q1_button:
+        quick_question = "What is trading and how does it work? Please explain the basics for beginners."
+    elif q2_button:
+        quick_question = "What are the best trading strategies? Please explain different approaches and techniques."
+    elif q3_button:
+        quick_question = "What is risk management in trading? How can I protect my capital and minimize losses?"
+    
+    # Process user input with typing animation - button click or quick questions
+    if (ask_button and query.strip()) or quick_question:
         # Check if we're not already processing
         if not st.session_state.get("is_typing", False):
             # Show typing indicator
             st.session_state.is_typing = True
             
+            # Determine the message to process
+            message_to_process = quick_question if quick_question else query.strip()
+            
             # Add user message to chat history
-            st.session_state.chat_history.append({"role": "user", "content": query.strip()})
+            st.session_state.chat_history.append({"role": "user", "content": message_to_process})
             
             # Rerun to show typing indicator
             st.rerun()
