@@ -349,11 +349,17 @@ def user_interface():
         background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
         color: #333;
         border: none;
-        border-radius: 25px;
-        padding: 15px 30px;
+        border-radius: 50%;
+        padding: 15px;
         font-weight: bold;
         box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         transition: all 0.3s ease;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
     }
     
     .stButton > button:hover {
@@ -368,19 +374,19 @@ def user_interface():
     /* Force input to bottom on mobile */
     .stTextInput, .stButton {
         position: fixed !important;
-        bottom: 20px !important;
+        bottom: 60px !important;
         z-index: 1001 !important;
     }
     
     .stTextInput {
         left: 20px !important;
-        right: 100px !important;
-        width: calc(100% - 120px) !important;
+        right: 90px !important;
+        width: calc(100% - 110px) !important;
     }
     
     .stButton {
         right: 20px !important;
-        width: 80px !important;
+        width: 60px !important;
     }
     
     /* Mobile responsive adjustments */
@@ -430,24 +436,29 @@ def user_interface():
         }
         
         .stButton > button {
-            padding: 12px 20px !important;
-            font-size: 14px !important;
-            border-radius: 25px !important;
+            padding: 15px !important;
+            font-size: 20px !important;
+            border-radius: 50% !important;
             background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%) !important;
             color: #333 !important;
             border: none !important;
+            width: 50px !important;
+            height: 50px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
         
         /* Force positioning on mobile */
         .stTextInput {
             left: 10px !important;
-            right: 90px !important;
-            width: calc(100% - 100px) !important;
+            right: 70px !important;
+            width: calc(100% - 80px) !important;
         }
         
         .stButton {
             right: 10px !important;
-            width: 80px !important;
+            width: 50px !important;
         }
     }
     
@@ -524,7 +535,7 @@ def user_interface():
     with col1:
         query = st.text_input("", key="query_input", placeholder="Ask about trading, market analysis, or anything else...", label_visibility="collapsed")
     with col2:
-        ask_button = st.button("Send 🚀", type="primary")
+        ask_button = st.button("🚀", type="primary")
     
     # Custom footer to cover any remaining Streamlit branding
     st.markdown("""
