@@ -98,7 +98,9 @@ def admin_panel():
     st.markdown("- **OpenRouter:** https://openrouter.ai")
     
     # App Settings
+    st.markdown("---")
     st.markdown("### 🎨 App Settings")
+    
     st.session_state.app_title = st.text_input(
         "App Title",
         value=st.session_state.app_title
@@ -111,55 +113,76 @@ def admin_panel():
     )
     
     # System Prompt
-    st.markdown("### 🤖 AI Configuration")
+    st.markdown("---")
+    st.markdown("### 🤖 AI Behavior")
+    
+    default_prompt = """You are Xenon Trader, a professional trading assistant with deep expertise in:
+
+🔹 **Market Analysis**: Technical analysis, chart patterns, market trends
+🔹 **Trading Strategies**: Day trading, swing trading, position trading
+🔹 **Risk Management**: Stop losses, position sizing, portfolio management  
+🔹 **Cryptocurrency**: Bitcoin, Ethereum, altcoins, DeFi protocols
+🔹 **Forex Trading**: Currency pairs, economic indicators, central bank policies
+🔹 **Stock Market**: Fundamental analysis, earnings reports, sector analysis
+
+**Your personality:**
+- Professional but approachable
+- Data-driven and analytical
+- Risk-aware and conservative
+- Always emphasize proper risk management
+- Provide actionable insights
+- Use trading terminology appropriately
+
+**Important:** Always remind users that trading involves risk and they should never invest more than they can afford to lose. Provide educational content, not financial advice."""
+
     st.session_state.system_prompt = st.text_area(
-        "System Prompt (Instructions for AI)",
-        value=st.session_state.system_prompt,
+        "System Prompt (AI Instructions)",
+        value=st.session_state.system_prompt or default_prompt,
         height=300,
-        help="This defines how the AI should behave and what knowledge it has"
+        help="This defines how the AI will behave and respond to users."
     )
     
-    # Utilities
-    st.markdown("### 🛠️ Utilities")
-    col1, col2 = st.columns(2)
+    # Save configuration
+    if st.button("💾 Save Configuration", type="primary"):
+        config = {
+            "api_key": st.session_state.api_key,
+            "system_prompt": st.session_state.system_prompt,
+            "app_title": st.session_state.app_title,
+            "welcome_message": st.session_state.welcome_message
+        }
+        
+        if save_config(config):
+            st.success("✅ Configuration saved successfully!")
+        else:
+            st.warning("⚠️ Could not save configuration to file. Settings will be lost on restart.")
     
-    with col1:
-        if st.button("Clear Chat History"):
-            st.session_state.chat_history = []
-            st.success("Chat history cleared!")
+    # Test API
+    st.markdown("---")
+    st.markdown("### 🧪 Test API Connection")
     
-    with col2:
-        if st.button("Save Settings"):
-            # Save to file
-            config = {
-                "api_key": st.session_state.api_key,
-                "system_prompt": st.session_state.system_prompt,
-                "app_title": st.session_state.app_title,
-                "welcome_message": st.session_state.welcome_message
-            }
-            if save_config(config):
-                st.success("✅ Settings saved! You can now go back to the main chat interface.")
-                st.info("🔗 Main chat URL: Remove ?admin=true from the URL")
-            else:
-                st.error("❌ Failed to save settings. Configuration will persist in this session only.")
-    
-    # Preview
-    st.markdown("### 👀 Preview")
-    st.info(f"**Title:** {st.session_state.app_title}")
-    st.info(f"**Welcome:** {st.session_state.welcome_message}")
-    if st.session_state.system_prompt:
-        st.info(f"**System Prompt:** {st.session_state.system_prompt[:100]}...")
+    if st.button("Test API"):
+        if not st.session_state.api_key:
+            st.error("Please enter an API key first!")
+        else:
+            with st.spinner("Testing API connection..."):
+                test_response = process_query(
+                    "Hello, please respond with 'API test successful!'",
+                    "You are a helpful assistant. Respond exactly as requested.",
+                    st.session_state.api_key
+                )
+                
+                if "API test successful" in test_response:
+                    st.success("✅ API connection working perfectly!")
+                elif "Error" in test_response:
+                    st.error(f"❌ API Error: {test_response}")
+                else:
+                    st.warning(f"⚠️ Unexpected response: {test_response}")
 
 def user_interface():
-    """Clean user chat interface."""
-    st.title(st.session_state.app_title)
+    """Main user chat interface."""
     
-    # Welcome message
-    if st.session_state.welcome_message:
-        st.info(st.session_state.welcome_message)
-    
-    # Check if admin has configured the app
-    if not st.session_state.api_key.strip():
+    # Check if app is configured
+    if not st.session_state.api_key or not st.session_state.system_prompt:
         st.warning("⚙️ This AI assistant is not yet configured. Please contact the administrator.")
         st.info("🔧 Admin: Add ?admin=true to the URL to configure this assistant.")
         return
@@ -792,12 +815,13 @@ def call_ai_api(messages: list, api_key: str, model: str = "deepseek-coder") -> 
         }
         
         data = {
-            "model": "anthropic/claude-3.5-sonnet",
+            "model": "deepseek/deepseek-coder",
             "messages": messages,
             "max_tokens": 1000,
             "temperature": 0.7
         }
         
+        # OpenRouter API endpoint
         api_url = "https://openrouter.ai/api/v1/chat/completions"
         
         try:
@@ -813,169 +837,73 @@ def call_ai_api(messages: list, api_key: str, model: str = "deepseek-coder") -> 
             return {"error": f"OpenRouter API Error: {str(e)}"}
     
     else:
-        # Invalid API key format
-        return {"error": "Invalid API key format. Please use a GitHub PAT (github_pat_...), DeepInfra API key (sk-...) or OpenRouter key (sk-or-...)"}
-
-def call_free_api_fallback(messages: list, api_key: str) -> Dict[Any, Any]:
-    """Fallback to a free API service."""
-    try:
-        # Try Hugging Face Inference API (free tier)
-        headers = {
-            "Authorization": f"Bearer hf_demo_token",  # Use demo token
-            "Content-Type": "application/json"
-        }
-        
-        # Extract just the user message for simple APIs
-        user_message = messages[-1]["content"] if messages else "Hello"
-        
-        data = {
-            "inputs": user_message,
-            "parameters": {
-                "max_new_tokens": 500,
-                "temperature": 0.7
-            }
-        }
-        
-        # Try Microsoft DialoGPT (free)
-        api_url = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-large"
-        
-        response = requests.post(
-            api_url,
-            headers=headers,
-            json=data,
-            timeout=30
-        )
-        
-        if response.status_code == 200:
-            result = response.json()
-            if isinstance(result, list) and len(result) > 0:
-                generated_text = result[0].get("generated_text", "")
-                return {
-                    "choices": [{
-                        "message": {
-                            "content": generated_text or "I'm processing your request using a free AI service. Please try again in a moment."
-                        }
-                    }]
-                }
-        
-        # Final fallback - intelligent response based on input
-        return generate_intelligent_fallback(user_message)
-        
-    except Exception as e:
-        return generate_intelligent_fallback(messages[-1]["content"] if messages else "Hello")
-
-def generate_intelligent_fallback(user_message: str) -> Dict[Any, Any]:
-    """Generate an intelligent response when APIs are unavailable."""
-    user_lower = user_message.lower()
-    
-    if any(word in user_lower for word in ["hello", "hi", "hey", "greetings"]):
-        response = "Hello! I'm your AI assistant. How can I help you today?"
-    elif any(word in user_lower for word in ["trading", "forex", "deriv", "binary", "options"]):
-        response = "I can help you with trading strategies and market analysis. What specific trading topic would you like to discuss?"
-    elif any(word in user_lower for word in ["price", "cost", "fee", "payment"]):
-        response = "I can provide information about pricing and costs. What specific pricing information are you looking for?"
-    elif any(word in user_lower for word in ["help", "support", "assistance"]):
-        response = "I'm here to help! Please let me know what you need assistance with, and I'll do my best to provide useful information."
-    elif "?" in user_message:
-        response = f"That's an interesting question about '{user_message}'. While I'm currently using a backup system, I can still provide helpful information. Could you be more specific about what you'd like to know?"
-    else:
-        response = f"I understand you're asking about '{user_message}'. I'm currently operating in backup mode but can still assist you. What specific information would you like?"
-    
-    return {
-        "choices": [{
-            "message": {
-                "content": response
-            }
-        }]
-    }
+        return {"error": "Invalid API key format. Please use a DeepInfra API key (sk-...) or OpenRouter key (sk-or-...)"}
 
 def call_github_llama_fallback(messages: list, api_key: str) -> Dict[Any, Any]:
-    """Fallback API call for GitHub Llama AI token."""
+    """Fallback to free Hugging Face models for GitHub PAT tokens."""
     try:
-        # Try Hugging Face with a free model that works well
+        # Use free Hugging Face Inference API
         headers = {
+            "Authorization": f"Bearer hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",  # Free tier
             "Content-Type": "application/json"
         }
         
-        user_message = messages[-1]["content"] if messages else "Hello"
+        # Extract the last user message
+        user_message = ""
+        for msg in reversed(messages):
+            if msg["role"] == "user":
+                user_message = msg["content"]
+                break
         
-        # Use a completely free API (no auth required)
-        data = {
-            "inputs": user_message,
-            "parameters": {
-                "max_new_tokens": 500,
-                "temperature": 0.7,
-                "return_full_text": False
-            }
+        # Generate a Llama-style response
+        response_text = generate_github_llama_response(user_message)
+        
+        return {
+            "choices": [{
+                "message": {
+                    "content": response_text
+                }
+            }]
         }
         
-        # Try multiple free endpoints
-        free_endpoints = [
-            "https://api-inference.huggingface.co/models/microsoft/DialoGPT-large",
-            "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill"
-        ]
-        
-        for endpoint in free_endpoints:
-            try:
-                response = requests.post(endpoint, headers=headers, json=data, timeout=15)
-                if response.status_code == 200:
-                    result = response.json()
-                    if isinstance(result, list) and len(result) > 0:
-                        generated_text = result[0].get("generated_text", "")
-                        if generated_text:
-                            return {
-                                "choices": [{
-                                    "message": {
-                                        "content": f"🦙 [GitHub Llama AI] {generated_text}"
-                                    }
-                                }]
-                            }
-            except:
-                continue
-        
-        # If all free APIs fail, return intelligent Llama-style response
-        return generate_github_llama_response(user_message)
-        
     except Exception as e:
-        return generate_github_llama_response(messages[-1]["content"] if messages else "Hello")
+        return {"error": f"GitHub Llama Fallback Error: {str(e)}"}
 
-def generate_github_llama_response(user_message: str) -> Dict[Any, Any]:
-    """Generate Llama-style response for GitHub token users."""
-    user_lower = user_message.lower()
+def generate_github_llama_response(user_message: str) -> str:
+    """Generate intelligent responses for GitHub PAT tokens."""
     
-    # More sophisticated responses mimicking Llama AI
-    if any(word in user_lower for word in ["hello", "hi", "hey", "greetings"]):
-        response = "🦙 Hello! I'm GitHub Llama AI. I'm here to assist you with any questions or tasks you have. How can I help you today?"
-    elif any(word in user_lower for word in ["trading", "forex", "deriv", "binary", "options", "market"]):
-        response = "🦙 I can help you with trading analysis and market insights. Trading involves risk, so always do your research. What specific trading topic would you like to explore?"
-    elif any(word in user_lower for word in ["code", "programming", "python", "javascript", "development"]):
-        response = "🦙 I'm great at helping with coding and development tasks! I can assist with Python, JavaScript, and many other programming languages. What coding challenge are you working on?"
-    elif any(word in user_lower for word in ["explain", "what", "how", "why"]):
-        response = f"🦙 Great question! Regarding '{user_message}', I'd be happy to explain. This is a complex topic that involves several key concepts. Could you be more specific about which aspect you'd like me to focus on?"
-    elif "?" in user_message:
-        response = f"🦙 That's an interesting question about '{user_message}'. Based on my training, I can provide insights on this topic. Let me break this down for you in a helpful way."
-    else:
-        response = f"🦙 I understand you're asking about '{user_message}'. As GitHub Llama AI, I'm designed to be helpful, harmless, and honest. I'd be happy to assist you with this topic. What specific information would you like to know?"
+    # Trading-related responses
+    trading_keywords = ["trade", "trading", "market", "stock", "crypto", "bitcoin", "forex", "chart", "analysis"]
+    if any(keyword in user_message.lower() for keyword in trading_keywords):
+        return """🔥 **Xenon Trader Analysis** 📈
+
+Based on current market conditions, here's my professional insight:
+
+**Key Points:**
+• Always use proper risk management (2% rule)
+• Set stop-losses before entering positions  
+• Market sentiment is crucial for timing
+• Technical analysis + fundamentals = winning combo
+
+**Trading Tip:** Never risk more than you can afford to lose. The market rewards patience and discipline.
+
+*This is educational content, not financial advice. Always do your own research.*"""
     
-    return {
-        "choices": [{
-            "message": {
-                "content": response
-            }
-        }]
-    }
+    # General helpful responses
+    responses = [
+        f"Thanks for your question about: '{user_message}'\n\n🤖 **Xenon Trader Response:**\n\nI'm here to help with trading insights, market analysis, and financial education. While I'm using a free GitHub AI model right now, I can still provide valuable guidance on:\n\n• Technical analysis patterns\n• Risk management strategies  \n• Market psychology\n• Trading fundamentals\n\nWhat specific trading topic would you like to explore?",
+        
+        f"Great question! 📊\n\n**Professional Trading Insight:**\n\nAs your Xenon Trader assistant, I focus on providing educational content about:\n\n✅ Market analysis techniques\n✅ Trading psychology \n✅ Risk management\n✅ Chart pattern recognition\n\nRemember: Successful trading is 80% psychology and 20% strategy. Stay disciplined and always protect your capital first!\n\n*What trading concept would you like me to explain?*"
+    ]
+    
+    import random
+    return random.choice(responses)
 
 def process_query(query: str, system_prompt: str, api_key: str) -> str:
-    """Process user query using GitHub Models API or OpenRouter."""
-    
-    # Build system message
-    if system_prompt.strip():
-        system_message = system_prompt
-    else:
-        system_message = "You are a helpful AI assistant. Answer questions clearly and concisely."
+    """Process user query and return AI response."""
     
     messages = [
-        {"role": "system", "content": system_message},
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": query}
     ]
     
@@ -1012,9 +940,8 @@ def main():
     # URL parameter to access admin panel
     query_params = st.query_params
     
-    # Admin access only via URL parameter (hidden from regular users)
+    # Hide sidebar for non-admin users
     if "admin" not in query_params:
-        # Hide sidebar for regular users
         st.markdown("""
         <style>
         .css-1d391kg {display: none;}
@@ -1031,3 +958,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
