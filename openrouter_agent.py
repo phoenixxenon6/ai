@@ -35,7 +35,7 @@ def init_session_state():
     
     defaults = {
         "api_key": saved_config.get("api_key", ""),
-        "system_prompt": saved_config.get("system_prompt", ""),
+        "system_prompt": saved_config.get("system_prompt", "You are Xenon Trader, a specialized trading assistant for the Deriv platform. \n\nYou can:\n✅ Respond to greetings warmly and introduce yourself as a trading specialist\n✅ Help with Deriv platform features and navigation\n✅ Provide trading strategies and market analysis\n✅ Discuss financial markets (Forex, Stocks, Commodities, Indices, Cryptocurrencies)\n✅ Teach risk management and trading education\n✅ Explain technical analysis and chart reading\n✅ Share trading psychology and discipline tips\n✅ Guide users on Deriv-specific tools and features\n\nWhen someone greets you, respond warmly and mention you're programmed specifically for trading assistance.\n\nIMPORTANT RESTRICTIONS:\n- For non-trading topics, politely say: 'My owner programmed me specifically for trading questions. Please ask about trading, market analysis, or Deriv features.'\n- Do NOT provide: general knowledge, entertainment, personal advice unrelated to trading, tech support for non-trading software\n- Stay focused on helping users become better traders\n\nBe helpful, professional, and trading-focused in your responses."),
         "chat_history": [],
         "admin_mode": False,
         "admin_password": "admin123",  # Change this to your preferred password
@@ -609,6 +609,51 @@ def user_interface():
             # Rerun to show response
             st.rerun()
 
+def is_trading_related(text: str) -> bool:
+    """Check if the response is trading/finance related."""
+    trading_keywords = [
+        'trading', 'trade', 'trader', 'market', 'forex', 'stock', 'crypto', 'deriv', 
+        'investment', 'profit', 'loss', 'price', 'chart', 'analysis', 'strategy',
+        'portfolio', 'risk', 'money', 'currency', 'exchange', 'buy', 'sell',
+        'bullish', 'bearish', 'technical', 'fundamental', 'trend', 'support',
+        'resistance', 'volatility', 'leverage', 'margin', 'pip', 'spread',
+        'commodity', 'index', 'indices', 'financial', 'economic', 'broker',
+        'platform', 'mt5', 'binary', 'options', 'cfd', 'deposit', 'withdraw'
+    ]
+    
+    text_lower = text.lower()
+    return any(keyword in text_lower for keyword in trading_keywords)
+
+def is_greeting_or_polite(text: str) -> bool:
+    """Check if the text is a greeting or polite interaction."""
+    greeting_keywords = [
+        'hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening',
+        'greetings', 'welcome', 'thanks', 'thank you', 'please', 'excuse me',
+        'sorry', 'goodbye', 'bye', 'see you', 'nice to meet', 'how are you',
+        'what are you', 'who are you', 'what can you do', 'help me', 'assist',
+        'what is your name', 'introduce yourself', 'tell me about yourself'
+    ]
+    
+    text_lower = text.lower()
+    return any(keyword in text_lower for keyword in greeting_keywords)
+
+def filter_response(response: str, user_question: str) -> str:
+    """Filter AI response to ensure it's trading-focused."""
+    
+    # Allow greetings and polite interactions
+    if is_greeting_or_polite(user_question):
+        return response
+    
+    # Check if user question is trading-related
+    if not is_trading_related(user_question):
+        return "My owner programmed me specifically for trading questions. Please ask me about trading strategies, market analysis, Deriv platform features, or anything related to financial markets. How can I help you with your trading today?"
+    
+    # Check if AI response is trading-related (but allow greetings in responses)
+    if not is_trading_related(response) and not is_greeting_or_polite(response):
+        return "I'm here to help you with trading and Deriv platform questions. Let me know what you'd like to learn about trading strategies, market analysis, or Deriv features!"
+    
+    return response
+
 def call_ai_api(messages: list, api_key: str, model: str = "deepseek-coder") -> Dict[Any, Any]:
     """Call DeepSeek API, GitHub Models API, or OpenRouter API with messages."""
     
@@ -881,7 +926,10 @@ def process_query(query: str, system_prompt: str, api_key: str) -> str:
         return f"Error: {response['error']}"
     
     try:
-        return response["choices"][0]["message"]["content"]
+        raw_response = response["choices"][0]["message"]["content"]
+        # Filter the response to ensure it's trading-focused
+        filtered_response = filter_response(raw_response, query)
+        return filtered_response
     except (KeyError, IndexError):
         return "Error: Unexpected response format from AI API"
 
