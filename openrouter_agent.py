@@ -196,7 +196,7 @@ def user_interface():
         top: 0;
         left: 0;
         right: 0;
-        height: 80px;
+        height: 70px;
         background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
         z-index: 1000;
         display: flex;
@@ -208,16 +208,16 @@ def user_interface():
     }
     
     .xenon-title {
-        font-size: 28px;
+        font-size: 24px;
         font-weight: bold;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
     }
     
     .xenon-icon {
-        font-size: 32px;
+        font-size: 28px;
         animation: pulse 2s infinite;
     }
     
@@ -230,13 +230,14 @@ def user_interface():
     /* Chat area */
     .chat-area {
         position: fixed;
-        top: 80px;
+        top: 70px;
         left: 0;
         right: 0;
-        bottom: 120px;
+        bottom: 100px;
         overflow-y: auto;
-        padding: 20px;
+        padding: 15px;
         background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        -webkit-overflow-scrolling: touch;
     }
     
     /* Input area fixed at bottom */
@@ -245,11 +246,13 @@ def user_interface():
         bottom: 0;
         left: 0;
         right: 0;
-        height: 120px;
+        height: 100px;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 20px;
+        padding: 15px;
         box-shadow: 0 -2px 20px rgba(0,0,0,0.1);
         z-index: 1000;
+        display: flex;
+        align-items: center;
     }
     
     /* Chat messages */
@@ -361,6 +364,72 @@ def user_interface():
     /* Hide default streamlit elements */
     .css-1rs6os {display: none;}
     .css-17eq0hr {display: none;}
+    
+    /* Mobile responsive adjustments */
+    @media (max-width: 768px) {
+        .xenon-title {
+            font-size: 18px;
+            gap: 5px;
+        }
+        
+        .xenon-icon {
+            font-size: 22px;
+        }
+        
+        .xenon-header {
+            height: 60px;
+        }
+        
+        .chat-area {
+            top: 60px;
+            bottom: 90px;
+            padding: 10px;
+        }
+        
+        .input-area {
+            height: 90px;
+            padding: 10px;
+        }
+        
+        .user-message, .bot-message {
+            font-size: 14px;
+            padding: 12px 16px;
+            margin: 8px 10px;
+            max-width: 85%;
+        }
+        
+        .user-message {
+            margin-left: auto;
+            margin-right: 10px;
+        }
+        
+        .bot-message {
+            margin-left: 10px;
+            margin-right: auto;
+        }
+        
+        .stTextInput > div > div > input {
+            font-size: 14px;
+            padding: 12px 16px;
+        }
+        
+        .stButton > button {
+            padding: 12px 20px;
+            font-size: 14px;
+        }
+    }
+    
+    /* Custom footer to cover Streamlit branding on mobile */
+    .custom-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 40px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        z-index: 9999;
+        pointer-events: none;
+    }
     </style>
     """, unsafe_allow_html=True)
     
@@ -418,22 +487,17 @@ def user_interface():
     # Display chat area
     st.markdown(chat_html, unsafe_allow_html=True)
     
-    # Fixed input area at bottom
-    st.markdown("""
-    <div class="input-area">
-        <div style="max-width: 800px; margin: 0 auto;">
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Input controls
+    # Input controls (positioned by CSS)
     col1, col2 = st.columns([4, 1])
     with col1:
         query = st.text_input("", key="query_input", placeholder="Ask about trading, market analysis, or anything else...", label_visibility="collapsed")
     with col2:
         ask_button = st.button("Send 🚀", type="primary")
     
-    # Close input area div
-    st.markdown("</div>", unsafe_allow_html=True)
+    # Custom footer to cover any remaining Streamlit branding
+    st.markdown("""
+    <div class="custom-footer"></div>
+    """, unsafe_allow_html=True)
     
     # JavaScript for text-to-speech and auto-scroll
     st.markdown("""
@@ -471,6 +535,9 @@ def user_interface():
             
             # Add user message to chat history
             st.session_state.chat_history.append({"role": "user", "content": query.strip()})
+            
+            # Clear the input box
+            st.session_state.query_input = ""
             
             # Rerun to show typing indicator
             st.rerun()
