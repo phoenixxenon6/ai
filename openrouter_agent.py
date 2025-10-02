@@ -365,6 +365,24 @@ def user_interface():
     .css-1rs6os {display: none;}
     .css-17eq0hr {display: none;}
     
+    /* Force input to bottom on mobile */
+    .stTextInput, .stButton {
+        position: fixed !important;
+        bottom: 20px !important;
+        z-index: 1001 !important;
+    }
+    
+    .stTextInput {
+        left: 20px !important;
+        right: 100px !important;
+        width: calc(100% - 120px) !important;
+    }
+    
+    .stButton {
+        right: 20px !important;
+        width: 80px !important;
+    }
+    
     /* Mobile responsive adjustments */
     @media (max-width: 768px) {
         .xenon-title {
@@ -382,12 +400,7 @@ def user_interface():
         
         .chat-area {
             top: 60px;
-            bottom: 90px;
-            padding: 10px;
-        }
-        
-        .input-area {
-            height: 90px;
+            bottom: 120px !important;
             padding: 10px;
         }
         
@@ -409,13 +422,32 @@ def user_interface():
         }
         
         .stTextInput > div > div > input {
-            font-size: 14px;
-            padding: 12px 16px;
+            font-size: 14px !important;
+            padding: 12px 16px !important;
+            border-radius: 25px !important;
+            background: white !important;
+            border: 2px solid #e0e0e0 !important;
         }
         
         .stButton > button {
-            padding: 12px 20px;
-            font-size: 14px;
+            padding: 12px 20px !important;
+            font-size: 14px !important;
+            border-radius: 25px !important;
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%) !important;
+            color: #333 !important;
+            border: none !important;
+        }
+        
+        /* Force positioning on mobile */
+        .stTextInput {
+            left: 10px !important;
+            right: 90px !important;
+            width: calc(100% - 100px) !important;
+        }
+        
+        .stButton {
+            right: 10px !important;
+            width: 80px !important;
         }
     }
     
