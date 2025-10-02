@@ -40,7 +40,8 @@ def init_session_state():
         "admin_mode": False,
         "admin_password": "admin123",  # Change this to your preferred password
         "app_title": saved_config.get("app_title", "Xenon Trader Live Assistant"),
-        "welcome_message": saved_config.get("welcome_message", "Hello! I'm Xenon Trader, your live trading assistant. How can I help you with your trading today?")
+        "welcome_message": saved_config.get("welcome_message", "Hello! I'm Xenon Trader, your live trading assistant. How can I help you with your trading today?"),
+        "clear_input": False
     }
     
     for key, value in defaults.items():
@@ -533,7 +534,9 @@ def user_interface():
     # Input controls (positioned by CSS)
     col1, col2 = st.columns([4, 1])
     with col1:
-        query = st.text_input("", key="query_input", placeholder="Ask about trading, market analysis, or anything else...", label_visibility="collapsed")
+        # Clear input if flag is set
+        input_value = "" if st.session_state.get("clear_input", False) else st.session_state.get("query_input", "")
+        query = st.text_input("", value=input_value, key="query_input", placeholder="Ask about trading, market analysis, or anything else...", label_visibility="collapsed")
     with col2:
         ask_button = st.button("🚀", type="primary")
     
@@ -574,8 +577,8 @@ def user_interface():
         # Add user message to chat history
         st.session_state.chat_history.append({"role": "user", "content": query.strip()})
         
-        # Clear the input box
-        st.session_state.query_input = ""
+        # Set flag to clear input on next run
+        st.session_state.clear_input = True
         
         # Rerun to show typing indicator
         st.rerun()
@@ -604,8 +607,9 @@ def user_interface():
             if len(st.session_state.chat_history) > 20:
                 st.session_state.chat_history = st.session_state.chat_history[-20:]
             
-            # Remove typing indicator
+            # Remove typing indicator and clear input flag
             st.session_state.is_typing = False
+            st.session_state.clear_input = False
             
             # Rerun to show response
             st.rerun()
