@@ -568,22 +568,17 @@ def user_interface():
     
     # Process user input with typing animation
     if (ask_button or query) and query.strip():
-        # Check if this is a repeated question
-        recent_questions = [msg["content"] for msg in st.session_state.chat_history[-10:] if msg["role"] == "user"]
-        if query.strip() in recent_questions:
-            st.warning("You just asked this question! Check the response above, or try asking something different.")
-        else:
-            # Show typing indicator
-            st.session_state.is_typing = True
-            
-            # Add user message to chat history
-            st.session_state.chat_history.append({"role": "user", "content": query.strip()})
-            
-            # Clear the input box
-            st.session_state.query_input = ""
-            
-            # Rerun to show typing indicator
-            st.rerun()
+        # Show typing indicator
+        st.session_state.is_typing = True
+        
+        # Add user message to chat history
+        st.session_state.chat_history.append({"role": "user", "content": query.strip()})
+        
+        # Clear the input box
+        st.session_state.query_input = ""
+        
+        # Rerun to show typing indicator
+        st.rerun()
     
     # Handle AI response generation (separate from input processing)
     if "is_typing" in st.session_state and st.session_state.is_typing:
